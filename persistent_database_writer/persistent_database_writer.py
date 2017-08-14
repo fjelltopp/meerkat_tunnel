@@ -19,6 +19,7 @@ class PersistentDatabaseWriter:
         self.engine = create_engine(os.environ['DATABASE_URL'])
         self.Session = sessionmaker(bind=self.engine)
         self.session = self.Session()
+        self.tables = {}
 
         self.Base = declarative_base()
 
@@ -52,10 +53,25 @@ class PersistentDatabaseWriter:
         :param queue: SQS queue name
         :return: returns 1 to 10 messages from SQS
         """
-        queue_ret_val = self.sqs_client.receive_messages(
+        queue_ret_val = self.sqs_client.receive_message(
             QueueUrl=self.get_queue_url(queue),
         )
         return queue_ret_val
+
+    def set_up_meta_data(self, data_entry):
+        """
+        Generates the meta data objects for data entry in case it doesn't exist alreade
+        :param data_entry: data to enter
+        :return:
+        """
+        table_name = data_entry['formId']
+
+        if table_name not in self.tables.keys():
+            self.tables[table_name] = type(table_name, (self.Base,), {
+                                "__tablename__": table_name,
+                                "id": Column(Integer, primary_key=True),
+                                "uuid": Column(String, index=True),
+                                "data": Column(JSONB)})
 
     def write_to_db(self, data_entry):
         """
@@ -66,15 +82,8 @@ class PersistentDatabaseWriter:
         """
         table_name = data_entry['formId']
 
-        table = type(table_name, (self.Base,), {
-                            "__tablename__": table_name,
-                            "id": Column(Integer, primary_key=True),
-                            "uuid": Column(String, index=True),
-                            "data": Column(JSONB)})
-
-        self.Base.metadata.create_all(self.engine)
-
-        new_row = table(uuid=uuid.uuid4(), data=data_entry['data'])
+        self.Base.metadata.create_all(self.engine, checkfirst=True)
+        new_row = self.tables[table_name](uuid=uuid.uuid4(), data=data_entry['data'])
         self.session.add(new_row)
         self.session.commit()
 
@@ -103,8 +112,9 @@ class PersistentDatabaseWriter:
 
         data_entries = self.fetch_data_from_queue(message['queue'])
         for data_entry in data_entries['Messages']:
-            self.write_to_db(data_entry['Body'])
-            self.acknowledge_messages(message['queue'], data_entry['ReceiptHandle'])
+            self.set_up_meta_data(json.loads(data_entry['Body']))
+            self.write_to_db(json.loads(data_entry['Body']))
+            self.acknowledge_messages(message['queue'], data_entry)
 
 
 def lambda_handler(event, context):
