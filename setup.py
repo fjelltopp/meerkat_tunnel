@@ -18,5 +18,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=reqs,
-    test_suite='persistent_database_writer.test'
+    test_suite='persistent_database_write.test'
 )
