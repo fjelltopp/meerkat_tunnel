@@ -83,7 +83,7 @@ class PersistentDatabaseWriter:
         table_name = data_entry['formId']
 
         self.Base.metadata.create_all(self.engine, checkfirst=True)
-        new_row = self.tables[table_name](uuid=uuid.uuid4(), data=data_entry['data'])
+        new_row = self.tables[table_name](uuid=uuid.uuid4(), data=data_entry['data'][0])
         self.session.add(new_row)
         self.session.commit()
 
