@@ -3,6 +3,7 @@ import os
 import argparse
 import sys
 
+
 def upload_deployment_package(function, package):
     print("We got this far!")
 
@@ -18,13 +19,12 @@ def make_deployment_package(lambda_function, python_version):
     # cleanup copied packages
     for pkg in packages:
         os.system('rm -r {0}/{1}/{2}'.format(cwd, lambda_function, pkg))
-    return 'foo'
+    print('Deployment package {0}.zip created'.format(lambda_function))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Deploy Meerkat Tunnel Lambda functions')
     parser.add_argument('function', type=str, help='name of Lambda function to deploy')
     parser.add_argument('-c', type=str, help='name of the country to deploy the functions to', default='demo')
-    #parser.add_argument('-d', '--dependencies', type=str, help='path to dependencies directory', default='')
     parser.add_argument('-p', '--python_interpreter', type=str, help='python interpreter version to use',
                         default='/usr/bin/python')
 
