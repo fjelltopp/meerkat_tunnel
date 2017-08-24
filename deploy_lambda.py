@@ -46,11 +46,11 @@ def make_deployment_package(lambda_function, python_version):
 
     # cleanup copied packages
     for pkg in packages:
-        os.system('zip -q {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg))
+        os.system('zip -q -r {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg))
         os.system('rm -r {0}/{1}/{2}'.format(cwd, lambda_function, pkg))
 
     for pkg64 in packages64:
-        os.system('zip -q {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg64))
+        os.system('zip -q -r {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg64))
         os.system('rm -r {0}/{1}/{2}'.format(cwd, lambda_function, pkg64))
 
     # go back to original working directory
