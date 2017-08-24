@@ -7,7 +7,7 @@ PYTHON_INTERPRETER="$3"
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
 # Initialize our own variables:
-PYTHON_INTERPRETER="/usr/bin/python"
+PYTHON_INTERPRETER="/usr/bin/python3"
 
 while getopts "h?p:" opt; do
     case "$opt" in
@@ -30,3 +30,4 @@ pip install virtualenv
 virtualenv -p $PYTHON_INTERPRETER ${FUNCTION}_env
 source ${FUNCTION}_env/bin/activate
 pip install -r ${FUNCTION}/requirements.txt
+$PYTHON_INTERPRETER deploy_lambda.py $FUNCTION -c $COUNTRY -p python2.7
