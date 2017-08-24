@@ -31,7 +31,7 @@ def make_deployment_package(lambda_function, python_version):
     os.system('cp -r {0}/{1}_env/lib/{2}/site-packages/* {0}/{1}'.format(cwd, lambda_function, python_version))
     os.system('mkdir -p {0}/lambda_packages'.format(cwd))
     os.system('rm -f {0}/lambda_packages/{1}.zip'.format(cwd, lambda_function))
-    os.system('zip -q -r {0}/lambda_packages/{1}.zip ./{1}'.format(cwd, lambda_function))
+    os.system('zip -q -r {0}/lambda_packages/{1}.zip ./{1}/*'.format(cwd, lambda_function))
 
     # cleanup copied packages
     for pkg in packages:
