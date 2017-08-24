@@ -1,4 +1,4 @@
-import boto3
+#import boto3
 import os
 import argparse
 
@@ -15,11 +15,11 @@ def make_deployment_package(function, python_version):
 
     os.system('virtualenv -p /usr/bin/{0} {1}_env'.format(python_version, function))
     os.system('source {0}/{1}_env/bin/activate'.format(cwd, function))
-    os.system('pip install -r ~/meerkat_tunnel/{0}/requirements.txt'.format(function))
+    os.system('pip install -r {0}/meerkat_tunnel/{1}/requirements.txt'.format(function))
     os.system('cp {0}/{1}_env/lib/{2}/site_packages/* {0}/meerkat_tunnel/{1}/'.format(cwd, function, python_version))
     os.system('mkdir -p {0}/lambda_packages'.format(cwd))
     os.system('rm -f {0}/lambda_packages/{1}.zip'.format(cwd, function))
-    os.system('zip -r {0}lambda_packages/{1}.zip {0}/meerkat_tunnel/{1}'.format(cwd,function))
+    os.system('zip -r {0}lambda_packages/{1}.zip {0}/meerkat_tunnel/{1}'.format(cwd, function))
     return 'foo'
 
 if __name__ == "__main__":
