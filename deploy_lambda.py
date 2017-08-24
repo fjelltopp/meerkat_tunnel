@@ -4,6 +4,11 @@ import argparse
 import sys
 
 
+def get_precompiled_psycopg2(cwd, lambda_function):
+    os.system('rm -r {0}/{1}/psycopg2'.format(cwd, lambda_function))
+    os.system('cp -r ../awslambda-psycopg2/psycopg2 {0}/{1}}'.format(cwd, lambda_function))
+
+
 def upload_deployment_package(lambda_function, pkg, country):
     region_name = 'eu-west-1'
     s3_client = boto3.client('s3', region_name=region_name)
@@ -40,6 +45,10 @@ def make_deployment_package(lambda_function, python_version):
     os.system('mkdir -p {0}/lambda_packages'.format(cwd))
     os.system('rm -f {0}/lambda_packages/{1}.zip'.format(cwd, lambda_function))
 
+    # get precompiled version of psycopg2 if it's required
+    if 'psycopg2' in packages or 'psycopg2' in packages64:
+        get_precompiled_psycopg2(cwd, lambda_function)
+
     # change directory to zip on correct folder level
     os.chdir('{0}/{1}'.format(cwd, lambda_function))
     os.system('zip -q {0}/lambda_packages/{1}.zip {1}.py'.format(cwd, lambda_function))
@@ -55,6 +64,7 @@ def make_deployment_package(lambda_function, python_version):
 
     # go back to original working directory
     os.chdir(cwd)
+
     print('Deployment package {0}.zip created'.format(lambda_function))
     return '{0}/lambda_packages/{1}.zip'.format(cwd, lambda_function)
 
