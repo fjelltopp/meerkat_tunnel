@@ -1,10 +1,15 @@
-#import boto3
+import boto3
 import os
 import argparse
 import sys
 
 
-def upload_deployment_package(function, package):
+def upload_deployment_package(function, package, country):
+    region_name = 'eu-west-1'
+    s3_client = boto3.client('s3', region_name=region_name)
+
+    s3_client.upload_file(package, 'meerkat-tunnel', '{0}.zip'.format(function))
+
     print("We got this far!")
 
 
@@ -20,11 +25,13 @@ def make_deployment_package(lambda_function, python_version):
     for pkg in packages:
         os.system('rm -r {0}/{1}/{2}'.format(cwd, lambda_function, pkg))
     print('Deployment package {0}.zip created'.format(lambda_function))
+    return '{0}/lambda_packages/{1}.zip'.format(cwd, lambda_function)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Deploy Meerkat Tunnel Lambda functions')
     parser.add_argument('function', type=str, help='name of Lambda function to deploy')
-    parser.add_argument('-c', type=str, help='name of the country to deploy the functions to', default='demo')
+    parser.add_argument('-c', '--country', type=str, help='name of the country to deploy the functions to',
+                        default='demo')
     parser.add_argument('-p', '--python_interpreter', type=str, help='python interpreter version to use',
                         default='/usr/bin/python')
 
@@ -34,4 +41,5 @@ if __name__ == "__main__":
     package = make_deployment_package(lambda_function=lambda_function,
                                       python_version=python_version)
     upload_deployment_package(function=lambda_function,
-                              package=package)
+                              package=package,
+                              country=vars(args)['country'])

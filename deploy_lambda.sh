@@ -30,4 +30,4 @@ pip install virtualenv
 virtualenv -p $PYTHON_INTERPRETER ${FUNCTION}_env
 source ${FUNCTION}_env/bin/activate
 pip install -r ${FUNCTION}/requirements.txt
-$PYTHON_INTERPRETER deploy_lambda.py $FUNCTION -c $COUNTRY -p python2.7
+python deploy_lambda.py $FUNCTION -c $COUNTRY
