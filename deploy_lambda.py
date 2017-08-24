@@ -27,8 +27,16 @@ def upload_deployment_package(lambda_function, pkg, country):
 
 def make_deployment_package(lambda_function, python_version):
     cwd = os.getcwd()
-    packages = os.listdir('{0}/{1}_env/lib/{2}/site-packages'.format(cwd, lambda_function, python_version))
-    os.system('cp -r {0}/{1}_env/lib/{2}/site-packages/* {0}/{1}'.format(cwd, lambda_function, python_version))
+    if os.path.isdir('{0}/{1}_env/lib/{2}/site-packages'.format(cwd, lambda_function, python_version)):
+        packages = os.listdir('{0}/{1}_env/lib/{2}/site-packages'.format(cwd, lambda_function, python_version))
+        os.system('cp -r {0}/{1}_env/lib/{2}/site-packages/* {0}/{1}'.format(cwd, lambda_function, python_version))
+    else:
+        packages = []
+    if os.path.isdir('{0}/{1}_env/lib64/{2}/site-packages'.format(cwd, lambda_function, python_version)):
+        packages64 = os.listdir('{0}/{1}_env/lib64/{2}/site-packages'.format(cwd, lambda_function, python_version))
+        os.system('cp -r {0}/{1}_env/lib64/{2}/site-packages/* {0}/{1}'.format(cwd, lambda_function, python_version))
+    else:
+        packages64 = []
     os.system('mkdir -p {0}/lambda_packages'.format(cwd))
     os.system('rm -f {0}/lambda_packages/{1}.zip'.format(cwd, lambda_function))
 
@@ -40,6 +48,10 @@ def make_deployment_package(lambda_function, python_version):
     for pkg in packages:
         os.system('zip -q {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg))
         os.system('rm -r {0}/{1}/{2}'.format(cwd, lambda_function, pkg))
+
+    for pkg64 in packages64:
+        os.system('zip -q {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg64))
+        os.system('rm -r {0}/{1}/{2}'.format(cwd, lambda_function, pkg64))
 
     # go back to original working directory
     os.chdir(cwd)
