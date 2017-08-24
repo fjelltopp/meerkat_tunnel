@@ -5,6 +5,7 @@ import sys
 
 
 def get_precompiled_psycopg2(cwd, lambda_function):
+    print("Using precompiled version of psycopg2 Python dependency")
     os.system('rm -r {0}/{1}/psycopg2'.format(cwd, lambda_function))
     os.system('cp -r ../psycopg2/psycopg2-2.6.1/build/lib.linux-x86_64-3.5/psycopg2 {0}/{1}'.format(cwd, lambda_function))
 
