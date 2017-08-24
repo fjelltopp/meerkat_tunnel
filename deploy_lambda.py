@@ -15,7 +15,7 @@ def upload_deployment_package(lambda_function, pkg, country):
 
     s3_client.upload_file(pkg, s3_bucket, s3_key)
 
-    lambda_client.update_funtion_code(
+    lambda_client.update_function_code(
         FunctionName=function_name,
         S3Bucket='meerkat-tunnel',
         S3Key=s3_key,
