@@ -4,13 +4,25 @@ import argparse
 import sys
 
 
-def upload_deployment_package(function, package, country):
+def upload_deployment_package(lambda_function, pkg, country):
     region_name = 'eu-west-1'
     s3_client = boto3.client('s3', region_name=region_name)
+    lambda_client = boto3.client('lambda', region_name=region_name)
 
-    s3_client.upload_file(package, 'meerkat-tunnel', '{0}.zip'.format(function))
+    s3_bucket = 'meerkat-tunnel'
+    s3_key = '{0}.zip'.format(lambda_function)
+    function_name = '{0}_{1}'.format(country, lambda_function)
 
-    print("We got this far!")
+    s3_client.upload_file(pkg, s3_bucket, s3_key)
+
+    lambda_client.update_funtion_code(
+        FunctionName=function_name,
+        S3Bucket='meerkat-tunnel',
+        S3Key=s3_key,
+        Publish=True
+    )
+
+    print('Deployment package {0}.zip deployed as AWS Lambda function {1}'.format(pkg, function_name))
 
 
 def make_deployment_package(lambda_function, python_version):
@@ -40,6 +52,6 @@ if __name__ == "__main__":
     python_version = 'python{0}'.format(sys.version[:3])
     package = make_deployment_package(lambda_function=lambda_function,
                                       python_version=python_version)
-    upload_deployment_package(function=lambda_function,
-                              package=package,
+    upload_deployment_package(lambda_function=lambda_function,
+                              pkg=package,
                               country=vars(args)['country'])
