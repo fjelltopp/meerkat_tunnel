@@ -6,7 +6,7 @@ import sys
 
 def get_precompiled_psycopg2(cwd, lambda_function):
     os.system('rm -r {0}/{1}/psycopg2'.format(cwd, lambda_function))
-    os.system('cp -r ../awslambda-psycopg2/psycopg2 {0}/{1}}'.format(cwd, lambda_function))
+    os.system('cp -r ../awslambda-psycopg2/psycopg2 {0}/{1}'.format(cwd, lambda_function))
 
 
 def upload_deployment_package(lambda_function, pkg, country):
