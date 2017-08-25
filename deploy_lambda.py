@@ -28,7 +28,7 @@ def upload_deployment_package(lambda_function, pkg, country):
         Publish=True
     )
 
-    print('Deployment package {0}.zip deployed as AWS Lambda function {1}'.format(pkg, function_name))
+    print('Deployment package {0} deployed as AWS Lambda function {1}'.format(pkg, function_name))
 
 
 def make_deployment_package(lambda_function, python_version):
