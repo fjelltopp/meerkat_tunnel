@@ -17,6 +17,7 @@ while getopts "h?p:" opt; do
         ;;
     p)  PYTHON_INTERPRETER=$OPTARG
         ;;
+    d)  PULL_DEPENDENCIES=$OPTARG
     esac
 done
 
@@ -30,4 +31,5 @@ pip install virtualenv
 virtualenv -p $PYTHON_INTERPRETER ${FUNCTION}_env
 source ${FUNCTION}_env/bin/activate
 pip install -r ${FUNCTION}/requirements.txt
+
 python deploy_lambda.py $FUNCTION -c $COUNTRY

@@ -2,11 +2,8 @@ import boto3
 import os
 import json
 import uuid
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+import logging
+import postgresql
 
 
 class PersistentDatabaseWriter:
@@ -15,13 +12,6 @@ class PersistentDatabaseWriter:
         self.sns_client = boto3.client('sns', region_name=region_name)
         self.sqs_client = boto3.client('sqs', region_name=region_name)
         self.sts_client = boto3.client('sts', region_name=region_name)
-
-        self.engine = create_engine(os.environ['DATABASE_URL'])
-        self.Session = sessionmaker(bind=self.engine)
-        self.session = self.Session()
-        self.tables = {}
-
-        self.Base = declarative_base()
 
     def get_account_id(self):
         """
@@ -58,21 +48,6 @@ class PersistentDatabaseWriter:
         )
         return queue_ret_val
 
-    def set_up_meta_data(self, data_entry):
-        """
-        Generates the meta data objects for data entry in case it doesn't exist alreade
-        :param data_entry: data to enter
-        :return:
-        """
-        table_name = data_entry['formId']
-
-        if table_name not in self.tables.keys():
-            self.tables[table_name] = type(table_name, (self.Base,), {
-                                "__tablename__": table_name,
-                                "id": Column(Integer, primary_key=True),
-                                "uuid": Column(String, index=True),
-                                "data": Column(JSONB)})
-
     def write_to_db(self, data_entry):
         """
         Writes data entry to database
@@ -81,11 +56,20 @@ class PersistentDatabaseWriter:
         :return:
         """
         table_name = data_entry['formId']
+        data = json.dumps(data_entry['data'][0])
 
-        self.Base.metadata.create_all(self.engine, checkfirst=True)
-        new_row = self.tables[table_name](uuid=uuid.uuid4(), data=data_entry['data'][0])
-        self.session.add(new_row)
-        self.session.commit()
+        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (\'{1}\', \'{2}\'::jsonb);'.format(
+            table_name,
+            uuid.uuid4(),
+            data
+        )
+        logging.debug(insert_statement)
+
+        db = postgresql.open(os.environ['DATABASE_URL'])
+        ret_insert = db.execute(insert_statement)
+
+        logging.debug(ret_insert)
+
 
     def acknowledge_messages(self, queue, data_entry):
         """
@@ -112,7 +96,7 @@ class PersistentDatabaseWriter:
 
         data_entries = self.fetch_data_from_queue(message['queue'])
         for data_entry in data_entries['Messages']:
-            self.set_up_meta_data(json.loads(data_entry['Body']))
+            # self.set_up_meta_data(json.loads(data_entry['Body']))
             self.write_to_db(json.loads(data_entry['Body']))
             self.acknowledge_messages(message['queue'], data_entry)
 
