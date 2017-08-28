@@ -24,8 +24,8 @@ echo "Running Deploy Lambda with parameters:"
 echo "Function $FUNCTION" 
 echo "country $COUNTRY" 
 echo "python interpreter $PYTHON_INTERPRETER"
-git checkout master
-git pull origin master
+#git checkout master
+#git pull origin master
 pip install virtualenv
 virtualenv -p $PYTHON_INTERPRETER ${FUNCTION}_env
 source ${FUNCTION}_env/bin/activate
