@@ -46,10 +46,6 @@ def make_deployment_package(lambda_function, python_version):
     os.system('mkdir -p {0}/lambda_packages'.format(cwd))
     os.system('rm -f {0}/lambda_packages/{1}.zip'.format(cwd, lambda_function))
 
-    # get precompiled version of psycopg2 if it's required
-    if 'psycopg2' in packages or 'psycopg2' in packages64:
-        get_precompiled_psycopg2(cwd, lambda_function)
-
     # change directory to zip on correct folder level
     os.chdir('{0}/{1}'.format(cwd, lambda_function))
     os.system('zip -q {0}/lambda_packages/{1}.zip {1}.py'.format(cwd, lambda_function))
