@@ -5,7 +5,7 @@ Lambda Queue Consumer Test
 import unittest
 from unittest.mock import MagicMock, call
 
-import lambda_queue_consumer.lambda_queue_consumer
+import nest_queue_consumer.nest_queue_consumer
 
 
 class LambdaQueueConsumerTest(unittest.TestCase):
@@ -19,7 +19,7 @@ class LambdaQueueConsumerTest(unittest.TestCase):
             'queue': 'nest-test-queue',
             'dead-letter-queue': 'nest-test-dead-letter-queue'
         }
-        self.consumer = lambda_queue_consumer.lambda_queue_consumer.LambdaQueueConsumer()
+        self.consumer = nest_queue_consumer.nest_queue_consumer.NestQueueConsumer()
         self.consumer.sts_client.get_caller_identity = MagicMock(return_value={
             'Account': 'test-account'
         })

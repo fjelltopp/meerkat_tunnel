@@ -3,7 +3,7 @@ import os
 import json
 
 
-class LambdaQueueConsumer:
+class NestQueueConsumer:
     def __init__(self):
         region_name = 'eu-west-1'
         self.sns_client = boto3.client('sns', region_name=region_name)
@@ -174,7 +174,7 @@ def lambda_handler(event, context):
     :param context:
     :return: returns information about where the data was forwarded to
     """
-    consumer = LambdaQueueConsumer()
+    consumer = NestQueueConsumer()
     message = json.loads(event['Records'][0]['Sns']['Message'])
     consumer.distribute_data(message)
 
