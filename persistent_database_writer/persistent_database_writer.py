@@ -73,7 +73,6 @@ class PersistentDatabaseWriter:
 
         logging.debug(ret_insert)
 
-
     def acknowledge_messages(self, queue, data_entry):
         """
         Acknowledges and deletes messages that were received from SQS
@@ -98,7 +97,7 @@ class PersistentDatabaseWriter:
         """
 
         data_entries = self.fetch_data_from_queue(message['queue'])
-        for data_entry in data_entries['Messages']:
+        for data_entry in data_entries.get('Messages',[]):
             # self.set_up_meta_data(json.loads(data_entry['Body']))
             self.write_to_db(json.loads(data_entry['Body']))
             self.acknowledge_messages(message['queue'], data_entry)
