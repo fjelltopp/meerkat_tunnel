@@ -26,7 +26,6 @@ class PersistentDatabaseWriter(unittest.TestCase):
             'dead-letter-queue': 'nest-test-dead-letter-queue'
         }
 
-        self.writer.
         # self.writer.session.add = MagicMock(return_value={})
         # self.writer.session.commit = MagicMock(return_value={})
 

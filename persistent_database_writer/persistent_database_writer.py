@@ -43,6 +43,9 @@ class PersistentDatabaseWriter:
         :param queue: SQS queue name
         :return: returns 1 to 10 messages from SQS
         """
+        self.sqs_client.create_queue(
+            QueueName=queue
+        )
         queue_ret_val = self.sqs_client.receive_message(
             QueueUrl=self.get_queue_url(queue),
         )
