@@ -61,6 +61,17 @@ class PersistentDatabaseWriter:
         table_name = data_entry['formId']
         data = json.dumps(data_entry['data'][0])
 
+        db = postgresql.open(os.environ['DATABASE_URL'])
+
+        create_table_statement = \
+            'CREATE TABLE IF NOT EXISTS {0} (ID serial primary key, UUID text NOT NULL, DATA text NOT NULL)'.format(
+                table_name
+            )
+        logging.debug(create_table_statement)
+
+        ret_create = db.execute(create_table_statement)
+        logging.debug(ret_create)
+
         insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (\'{1}\', \'{2}\'::jsonb);'.format(
             table_name,
             uuid.uuid4(),
@@ -68,9 +79,7 @@ class PersistentDatabaseWriter:
         )
         logging.debug(insert_statement)
 
-        db = postgresql.open(os.environ['DATABASE_URL'])
         ret_insert = db.execute(insert_statement)
-
         logging.debug(ret_insert)
 
     def acknowledge_messages(self, queue, data_entry):
