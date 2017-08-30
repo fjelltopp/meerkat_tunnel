@@ -94,7 +94,7 @@ class NestQueueConsumer:
                 QueueUrl=self.get_queue_url(queue_name),
                 MaxNumberOfMessages=10
             )
-            ).get('Messages',[])
+            ).get('Messages', [])
         return return_set
 
     def notify_outgoing_subscribers(self, outgoing_queue, dead_letter_queue_for_outgoing):
@@ -103,7 +103,7 @@ class NestQueueConsumer:
         :param outgoing_queue: outgoing queue
         :param dead_letter_queue_for_outgoing: dead letter queue for outgoing data
         """
-        notification_message_dict = {'queue':outgoing_queue, 'dead_letter_queue': dead_letter_queue_for_outgoing}
+        notification_message_dict = {'queue': outgoing_queue, 'dead_letter_queue': dead_letter_queue_for_outgoing}
         notification_message = json.dumps(notification_message_dict)
 
         topic = self.get_outgoing_topic()
