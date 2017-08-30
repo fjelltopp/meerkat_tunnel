@@ -8,7 +8,7 @@ from unittest.mock import MagicMock, call
 import nest_queue_consumer.nest_queue_consumer
 
 
-class LambdaQueueConsumerTest(unittest.TestCase):
+class NestQueueConsumerTest(unittest.TestCase):
 
     @classmethod
     def setup_class(cls):
