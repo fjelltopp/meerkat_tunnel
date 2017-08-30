@@ -94,7 +94,7 @@ class NestQueueConsumer:
                 QueueUrl=self.get_queue_url(queue_name),
                 MaxNumberOfMessages=10
             )
-            )['Messages']
+            ).get('Messages',[])
         return return_set
 
     def notify_outgoing_subscribers(self, outgoing_queue, dead_letter_queue_for_outgoing):
