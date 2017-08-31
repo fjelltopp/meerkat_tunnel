@@ -59,7 +59,7 @@ class PersistentDatabaseWriter:
         :return:
         """
         table_name = data_entry['formId']
-        data = json.dumps(data_entry['data'][0])
+        data = json.dumps(data_entry['data'])
 
         db = postgresql.open(os.environ['DATABASE_URL'])
 
@@ -119,6 +119,7 @@ def lambda_handler(event, context):
     :param context:
     :return: returns information about where the data was forwarded to
     """
+    
     writer = PersistentDatabaseWriter()
     message = json.loads(event['Records'][0]['Sns']['Message'])
     writer.store_data_entry(message)
