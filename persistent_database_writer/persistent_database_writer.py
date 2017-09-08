@@ -13,6 +13,12 @@ class PersistentDatabaseWriter:
         self.sqs_client = boto3.client('sqs', region_name=region_name)
         self.sts_client = boto3.client('sts', region_name=region_name)
 
+        self.max_number_of_messages = 10
+        self.call_again = False
+
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.DEBUG)
+
     def get_account_id(self):
         """
         Returns AWS account ID
@@ -22,6 +28,18 @@ class PersistentDatabaseWriter:
         """
         account_id = self.sts_client.get_caller_identity()["Account"]
         return account_id
+
+    @staticmethod
+    def get_outgoing_queue_name(incoming_queue, subscription_arn):
+        """
+        Constructs the full queue name based on subscription ARN
+
+        :param incoming_queue: SQS incoming queue name
+        :param subscription_arn: Subscription ARN
+        :return: returns 1 to 10 messages from SQS
+        """
+        endpoint = subscription_arn.split(':')
+        return incoming_queue + '-' + endpoint[-1]
 
     def get_queue_url(self, queue_name):
         """
@@ -48,6 +66,7 @@ class PersistentDatabaseWriter:
         )
         queue_ret_val = self.sqs_client.receive_message(
             QueueUrl=self.get_queue_url(queue),
+            MaxNumberOfMessages=self.max_number_of_messages
         )
         return queue_ret_val
 
@@ -67,20 +86,20 @@ class PersistentDatabaseWriter:
             'CREATE TABLE IF NOT EXISTS {0} (ID serial primary key, UUID text NOT NULL, DATA text NOT NULL)'.format(
                 table_name
             )
-        logging.debug(create_table_statement)
+        self.logger.debug(create_table_statement)
 
         ret_create = db.execute(create_table_statement)
-        logging.debug(ret_create)
+        logging.info(ret_create)
 
         insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (\'{1}\', \'{2}\'::jsonb);'.format(
             table_name,
             uuid.uuid4(),
             data
         )
-        logging.debug(insert_statement)
+        self.logger.debug(insert_statement)
 
         ret_insert = db.execute(insert_statement)
-        logging.debug(ret_insert)
+        self.logger.debug(ret_insert)
 
     def acknowledge_messages(self, queue, data_entry):
         """
@@ -97,19 +116,40 @@ class PersistentDatabaseWriter:
 
         return response
 
-    def store_data_entry(self, message):
+    def notify_outgoing_topic(self, topic, message):
+        """
+        Send notification with information about the outgoing queue and its dead letter queue
+        :param topic: Topic ARN that launches this function
+        :param message: message in the notification
+        """
+        self.logger.info("Notifying topic with message: {0}".format(json.dumps(message)))
+
+        self.sns_client.publish(
+            TopicArn=topic,
+            Message=json.dumps(message)
+        )
+
+    def store_data_entry(self, message, subscription_arn):
         """
         Main function to call functions
 
         :param message: message received by SNS
-        :return:
+        :param subscription_arn: subscription ARN of the Lambda SNS subscription
+        :return: Binary value whether the Lambda function should be launched again
         """
 
-        data_entries = self.fetch_data_from_queue(message['queue'])
-        for data_entry in data_entries.get('Messages',[]):
-            # self.set_up_meta_data(json.loads(data_entry['Body']))
+        nest_outgoing_queue = self.get_outgoing_queue_name(message['queue'], subscription_arn)
+        self.logger.info("Fetching data from queue {0}".format(nest_outgoing_queue))
+        data_entries = self.fetch_data_from_queue(nest_outgoing_queue)
+        if len(data_entries.get('Messages', [])) == self.max_number_of_messages:
+            self.call_again = True
+        for data_entry in data_entries.get('Messages', []):
             self.write_to_db(json.loads(data_entry['Body']))
-            self.acknowledge_messages(message['queue'], data_entry)
+            self.acknowledge_messages(nest_outgoing_queue, data_entry)
+
+        self.logger.info("Handled {0} data entries".format(len(data_entries.get('Messages', []))))
+
+        return self.call_again
 
 
 def lambda_handler(event, context):
@@ -122,6 +162,11 @@ def lambda_handler(event, context):
     
     writer = PersistentDatabaseWriter()
     message = json.loads(event['Records'][0]['Sns']['Message'])
-    writer.store_data_entry(message)
+    subscription_arn = event['Records'][0]['EventSubscriptionArn']
+    topic = event['Records'][0]['Sns']['TopicArn']
+    call_again = writer.store_data_entry(message, subscription_arn)
+
+    if call_again:
+        writer.notify_outgoing_topic(message, topic)
 
     return 'Lambda run for ' + os.environ['ORG']
