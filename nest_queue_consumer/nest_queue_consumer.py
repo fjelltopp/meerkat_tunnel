@@ -9,6 +9,7 @@ class NestQueueConsumer:
         self.sns_client = boto3.client('sns', region_name=region_name)
         self.sqs_client = boto3.client('sqs', region_name=region_name)
         self.sts_client = boto3.client('sts', region_name=region_name)
+        self.ec2_client = boto3.client('ec2', region_name=region_name)
 
     def get_account_id(self):
         """
@@ -59,15 +60,11 @@ class NestQueueConsumer:
 
     @staticmethod
     def get_outgoing_queue(subscriber, incoming_queue):
-        endpoint = subscriber['SubscriptionArn'].split(':')
-
-        return incoming_queue + '-' + endpoint[-1]
+        return incoming_queue + '-' + subscriber
 
     @staticmethod
     def get_dead_letter_queue_for_outgoing(subscriber, dead_letter_queue_for_incoming):
-        endpoint = subscriber['SubscriptionArn'].split(':')
-
-        return dead_letter_queue_for_incoming + '-' + endpoint[-1]
+        return dead_letter_queue_for_incoming + '-' + subscriber
 
     def get_outgoing_topic(self):
         """
@@ -145,14 +142,39 @@ class NestQueueConsumer:
             MessageBody=data_entry['Body']
         )
 
+    def get_ec2_instances(self, task):
+        """
+        Returns list of deploy_ids of existing ec2 instances for task (organization), indexed by
+        deploy_id and filtered by any further tags or instance ids specified. Tags must
+        be a list of dicts: [{'Name': 'tag_key', 'Values': ['tag_value']}].
+        :param task:
+        :param instance_ids:
+        """
+        # Assemble arguments to filter ec2 instances by task and branch tags.
+        args = {}
+        args['Filters'] = [{'Name': 'tag:meerkat:task', 'Values': [task]}]
+
+        # Get instance data
+        reservations = self.ec2_client.describe_instances(**args)['Reservations']
+
+        # Structure the data and return.
+        deploy_ids = []
+        for res in reservations:
+            for instance in res['Instances']:
+                for tag in instance['Tags']:
+                    if tag['Key'] == 'opsworks:instance':
+                        deploy_ids.append(tag['Value'])
+        return deploy_ids
+
     def distribute_data(self, message):
         """
         Main function to distribute data from incoming queue to subscriber queues
         :param message: Includes the queue name of the queue that has new data available
-        :return:
         """
+        outgoing_queue_archivist = 'persistent_database_writer'
 
-        subscriptions = self.get_outgoing_subscriptions(self.get_outgoing_topic()['TopicArn'])
+        subscriptions = self.get_ec2_instances(os.environ.get('ORG', ''))
+        subscriptions.append(outgoing_queue_archivist)
 
         incoming_queue = message['queue']
         dead_letter_queue_for_incoming = message['dead-letter-queue']
@@ -160,11 +182,12 @@ class NestQueueConsumer:
         for data_entry in incoming_data:
             for subscriber in subscriptions:
                 self.redirect_data_to_subscriber(subscriber, incoming_queue, dead_letter_queue_for_incoming, data_entry)
-                outgoing_queue = self.get_outgoing_queue(subscriber, incoming_queue)
-                dead_letter_queue_for_outgoing = self.get_dead_letter_queue_for_outgoing(
-                    subscriber, dead_letter_queue_for_incoming)
-                self.notify_outgoing_subscribers(outgoing_queue, dead_letter_queue_for_outgoing)
+            outgoing_queue = self.get_outgoing_queue(outgoing_queue_archivist, incoming_queue)
+            dead_letter_queue_for_outgoing = self.get_dead_letter_queue_for_outgoing(
+                outgoing_queue_archivist, dead_letter_queue_for_incoming)
+            self.notify_outgoing_subscribers(outgoing_queue, dead_letter_queue_for_outgoing)
             self.acknowledge_data_entry(incoming_queue, data_entry)
+
 
 
 def lambda_handler(event, context):
