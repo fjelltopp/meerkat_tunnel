@@ -1,6 +1,7 @@
 import boto3
 import os
 import json
+import logging
 
 
 class NestQueueConsumer:
@@ -10,6 +11,9 @@ class NestQueueConsumer:
         self.sqs_client = boto3.client('sqs', region_name=region_name)
         self.sts_client = boto3.client('sts', region_name=region_name)
         self.ec2_client = boto3.client('ec2', region_name=region_name)
+
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
 
     def get_account_id(self):
         """
@@ -179,6 +183,10 @@ class NestQueueConsumer:
         incoming_queue = message['queue']
         dead_letter_queue_for_incoming = message['dead-letter-queue']
         incoming_data = self.get_incoming_data(incoming_queue)
+
+        sub_len = len(subscriptions)
+        data_len = len(incoming_data)
+
         for data_entry in incoming_data:
             for subscriber in subscriptions:
                 self.redirect_data_to_subscriber(subscriber, incoming_queue, dead_letter_queue_for_incoming, data_entry)
@@ -186,7 +194,9 @@ class NestQueueConsumer:
             dead_letter_queue_for_outgoing = self.get_dead_letter_queue_for_outgoing(
                 outgoing_queue_archivist, dead_letter_queue_for_incoming)
             self.notify_outgoing_subscribers(outgoing_queue, dead_letter_queue_for_outgoing)
+
             self.acknowledge_data_entry(incoming_queue, data_entry)
+        self.logger.info("Handled {0} data entries for {1} subscribers".format(data_len, sub_len))
 
 
 
