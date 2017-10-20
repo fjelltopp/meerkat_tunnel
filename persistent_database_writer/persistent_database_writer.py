@@ -83,7 +83,7 @@ class PersistentDatabaseWriter:
         db = postgresql.open(os.environ['DATABASE_URL'])
 
         create_table_statement = \
-            'CREATE TABLE IF NOT EXISTS {0} (ID serial primary key, UUID text NOT NULL, DATA text NOT NULL)'.format(
+            'CREATE TABLE IF NOT EXISTS {0} (ID serial primary key, UUID text NOT NULL, DATA jsonb NOT NULL)'.format(
                 table_name
             )
         self.logger.debug(create_table_statement)
