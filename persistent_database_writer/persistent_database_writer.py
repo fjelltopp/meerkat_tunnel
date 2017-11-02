@@ -30,7 +30,7 @@ class PersistentDatabaseWriter:
         return account_id
 
     @staticmethod
-    def get_outgoing_queue_name(incoming_queue, subscription_arn):
+    def get_outgoing_queue_name(outgoing_queue, subscription_arn):
         """
         Constructs the full queue name based on subscription ARN
 
@@ -39,7 +39,7 @@ class PersistentDatabaseWriter:
         :return: returns 1 to 10 messages from SQS
         """
         #endpoint = subscription_arn.split(':')
-        return incoming_queue # + '-' + endpoint[-1]
+        return outgoing_queue # + '-' + endpoint[-1]
 
     def get_queue_url(self, queue_name):
         """
