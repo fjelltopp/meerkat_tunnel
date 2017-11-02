@@ -38,8 +38,8 @@ class PersistentDatabaseWriter:
         :param subscription_arn: Subscription ARN
         :return: returns 1 to 10 messages from SQS
         """
-        #endpoint = subscription_arn.split(':')
-        return outgoing_queue # + '-' + endpoint[-1]
+        
+        return os.environ['PERSISTENT_DATABASE_WRITER_QUEUE']
 
     def get_queue_url(self, queue_name):
         """
