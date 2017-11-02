@@ -38,7 +38,7 @@ class PersistentDatabaseWriter:
         :param subscription_arn: Subscription ARN
         :return: returns 1 to 10 messages from SQS
         """
-        
+
         return os.environ['PERSISTENT_DATABASE_WRITER_QUEUE']
 
     def get_queue_url(self, queue_name):
@@ -61,9 +61,9 @@ class PersistentDatabaseWriter:
         :param queue: SQS queue name
         :return: returns 1 to 10 messages from SQS
         """
-        self.sqs_client.create_queue(
-            QueueName=queue
-        )
+        #self.sqs_client.create_queue(
+        #    QueueName=queue
+        #)
         queue_ret_val = self.sqs_client.receive_message(
             QueueUrl=self.get_queue_url(queue),
             MaxNumberOfMessages=self.max_number_of_messages
