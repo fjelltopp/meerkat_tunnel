@@ -11,7 +11,7 @@ class PersistentDatabaseWriter:
         region_name = 'eu-west-1'
         self.sns_client = boto3.client('sns', region_name=region_name)
         self.sqs_client = boto3.client('sqs', region_name=region_name)
-        self.sts_client = boto3.client('sts', region_name=region_name)
+        # self.sts_client = boto3.client('sts', region_name=region_name)
 
         self.max_number_of_messages = 10
         self.call_again = False
@@ -26,7 +26,8 @@ class PersistentDatabaseWriter:
         Returns:\n
             account ID for the configured AWS user\n
         """
-        account_id = self.sts_client.get_caller_identity()["Account"]
+        # account_id = self.sts_client.get_caller_identity()["Account"]
+        account_id = os.environ["ACCOUNT_ID"]
         return account_id
 
     @staticmethod
