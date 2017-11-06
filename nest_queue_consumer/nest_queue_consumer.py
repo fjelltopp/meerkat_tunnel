@@ -13,7 +13,7 @@ class NestQueueConsumer:
         self.ec2_client = boto3.client('ec2', region_name=region_name)
 
         self.logger = logging.getLogger()
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(logging.WARNING)
 
     def get_account_id(self):
         """
@@ -90,12 +90,16 @@ class NestQueueConsumer:
         return_set = []
         # TODO empty the whole queue
 
-        for i in range(0, n):
-            return_set += (self.sqs_client.receive_message(
+        n_messages = 1
+        while n_messages != 0:
+            response = (self.sqs_client.receive_message(
                 QueueUrl=self.get_queue_url(queue_name),
-                MaxNumberOfMessages=10
+                MaxNumberOfMessages=10,
+                WaitTimeSeconds=1
             )
             ).get('Messages', [])
+            n_messages = len(response)
+            return_set += response
         return return_set
 
     def notify_outgoing_subscribers(self, outgoing_queue, dead_letter_queue_for_outgoing):
@@ -141,10 +145,12 @@ class NestQueueConsumer:
         outgoing_queue_url = self.sqs_client.create_queue(
             QueueName=outgoing_queue
         )
-        self.sqs_client.send_message(
+        resp = self.sqs_client.send_message(
             QueueUrl=outgoing_queue_url['QueueUrl'],
             MessageBody=data_entry['Body']
         )
+        self.logger.info("Sending to " + outgoing_queue)
+        self.logger.info(resp)
 
     def get_ec2_instances(self, task):
         """
@@ -179,11 +185,16 @@ class NestQueueConsumer:
 
         subscriptions = self.get_ec2_instances(os.environ.get('ORG', ''))
         subscriptions.append(outgoing_queue_archivist)
+        subscriptions.append("nest-queue-outgoing-test")
 
         incoming_queue = message['queue']
         dead_letter_queue_for_incoming = message['dead-letter-queue']
         incoming_data = self.get_incoming_data(incoming_queue)
 
+        self.logger.info("Incoming queue: " + incoming_queue)
+        for s in subscriptions:
+            self.logger.info(s)
+        
         sub_len = len(subscriptions)
         data_len = len(incoming_data)
 

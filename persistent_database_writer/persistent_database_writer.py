@@ -64,11 +64,18 @@ class PersistentDatabaseWriter:
         #self.sqs_client.create_queue(
         #    QueueName=queue
         #)
-        queue_ret_val = self.sqs_client.receive_message(
-            QueueUrl=self.get_queue_url(queue),
-            MaxNumberOfMessages=self.max_number_of_messages
-        )
-        return queue_ret_val
+        return_set = []
+        n_messages = 1
+        while n_messages != 0:
+            response = (self.sqs_client.receive_message(
+                QueueUrl=self.get_queue_url(queue),
+                MaxNumberOfMessages=self.max_number_of_messages,
+                WaitTimeSeconds=1
+            )
+            ).get('Messages', [])
+            n_messages = len(response)
+            return_set += response
+        return return_set
 
     def write_to_db(self, data_entry):
         """
