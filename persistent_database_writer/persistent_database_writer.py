@@ -4,6 +4,7 @@ import json
 import uuid
 import logging
 import postgresql
+import requests
 
 
 class PersistentDatabaseWriter:
@@ -13,7 +14,7 @@ class PersistentDatabaseWriter:
         self.sqs_client = boto3.client('sqs', region_name=region_name)
         # self.sts_client = boto3.client('sts', region_name=region_name)
 
-        self.max_number_of_messages = 10
+        self.max_number_of_messages = 4
         self.call_again = False
 
         self.logger = logging.getLogger()
@@ -65,18 +66,16 @@ class PersistentDatabaseWriter:
         #self.sqs_client.create_queue(
         #    QueueName=queue
         #)
-        return_set = []
-        n_messages = 1
-        while n_messages != 0:
-            response = (self.sqs_client.receive_message(
-                QueueUrl=self.get_queue_url(queue),
-                MaxNumberOfMessages=self.max_number_of_messages,
-                WaitTimeSeconds=1
-            )
-            ).get('Messages', [])
-            n_messages = len(response)
-            return_set += response
-        return return_set
+
+        response = (self.sqs_client.receive_message(
+            QueueUrl=self.get_queue_url(queue),
+            MaxNumberOfMessages=self.max_number_of_messages,
+            WaitTimeSeconds=1
+        )
+        ).get('Messages', [])
+
+        return response
+
 
     def write_to_db(self, data_entry):
         """
@@ -146,16 +145,16 @@ class PersistentDatabaseWriter:
         :return: Binary value whether the Lambda function should be launched again
         """
 
-        nest_outgoing_queue = self.get_outgoing_queue_name(message['queue'], subscription_arn)
+        nest_outgoing_queue = os.environ['PERSISTENT_DATABASE_WRITER_QUEUE'] # self.get_outgoing_queue_name(message['queue'], subscription_arn)
         self.logger.info("Fetching data from queue {0}".format(nest_outgoing_queue))
         data_entries = self.fetch_data_from_queue(nest_outgoing_queue)
-        if len(data_entries.get('Messages', [])) == self.max_number_of_messages:
+        if len(data_entries) == self.max_number_of_messages:
             self.call_again = True
-        for data_entry in data_entries.get('Messages', []):
+        for data_entry in data_entries:
             self.write_to_db(json.loads(data_entry['Body']))
             self.acknowledge_messages(nest_outgoing_queue, data_entry)
 
-        self.logger.info("Handled {0} data entries".format(len(data_entries.get('Messages', []))))
+        self.logger.info("Handled {0} data entries".format(len(data_entries)))
 
         return self.call_again
 
@@ -167,14 +166,14 @@ def lambda_handler(event, context):
     :param context:
     :return: returns information about where the data was forwarded to
     """
-    
+
     writer = PersistentDatabaseWriter()
     message = json.loads(event['Records'][0]['Sns']['Message'])
     subscription_arn = event['Records'][0]['EventSubscriptionArn']
     topic = event['Records'][0]['Sns']['TopicArn']
     call_again = writer.store_data_entry(message, subscription_arn)
 
-    if call_again:
-        writer.notify_outgoing_topic(message, topic)
+    #if call_again:
+    #    writer.notify_outgoing_topic(topic=topic, message=message)
 
     return 'Lambda run for ' + os.environ['ORG']
