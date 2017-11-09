@@ -129,12 +129,12 @@ class PersistentDatabaseWriter:
         :param topic: Topic ARN that launches this function
         :param message: message in the notification
         """
-        self.logger.info("Notifying topic with message: {0}".format(json.dumps(message)))
+        self.logger.info("Notifying topic {0} with message: {1}".format(str(topic),json.dumps(message)))
 
-        self.sns_client.publish(
-            TopicArn=topic,
-            Message=json.dumps(message)
-        )
+        #self.sns_client.publish(
+        #    TopicArn=topic,
+        #    Message=json.dumps(message)
+        #)
 
     def store_data_entry(self, message, subscription_arn):
         """
@@ -167,13 +167,16 @@ def lambda_handler(event, context):
     :return: returns information about where the data was forwarded to
     """
 
+    print("GETting google.com")
+    print(str(requests.get("http://www.google.com")))
+
     writer = PersistentDatabaseWriter()
     message = json.loads(event['Records'][0]['Sns']['Message'])
     subscription_arn = event['Records'][0]['EventSubscriptionArn']
     topic = event['Records'][0]['Sns']['TopicArn']
     call_again = writer.store_data_entry(message, subscription_arn)
 
-    #if call_again:
-    #    writer.notify_outgoing_topic(topic=topic, message=message)
+    if call_again:
+        writer.notify_outgoing_topic(topic=topic, message=message)
 
     return 'Lambda run for ' + os.environ['ORG']
