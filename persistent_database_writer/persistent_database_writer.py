@@ -12,22 +12,20 @@ class PersistentDatabaseWriter:
         region_name = 'eu-west-1'
         self.sns_client = boto3.client('sns', region_name=region_name)
         self.sqs_client = boto3.client('sqs', region_name=region_name)
-        # self.sts_client = boto3.client('sts', region_name=region_name)
 
-        self.max_number_of_messages = 4
+        self.max_number_of_messages = 10
         self.call_again = False
 
         self.logger = logging.getLogger()
-        self.logger.setLevel(logging.DEBUG)
+        self.logger.setLevel(logging.INFO)
 
     def get_account_id(self):
         """
         Returns AWS account ID
 
-        Returns:\n
-            account ID for the configured AWS user\n
+        :return: returns the account ID configured in the environment variables
         """
-        # account_id = self.sts_client.get_caller_identity()["Account"]
+
         account_id = os.environ["ACCOUNT_ID"]
         return account_id
 
@@ -47,8 +45,8 @@ class PersistentDatabaseWriter:
         """
         Creates a queue URL based on given queue name
 
-        Returns:\n
-            URL for the given queue\n
+        :param queue_name: name of the AWS SQS queue
+        :return: AWS SQS URL for the given queue
         """
         response = self.sqs_client.get_queue_url(
             QueueName=queue_name,
@@ -61,11 +59,8 @@ class PersistentDatabaseWriter:
         Polls messages from SQS queue
 
         :param queue: SQS queue name
-        :return: returns 1 to 10 messages from SQS
+        :return: returns 1 to 10 messages from SQS as set by max_number_of_messages
         """
-        #self.sqs_client.create_queue(
-        #    QueueName=queue
-        #)
 
         response = (self.sqs_client.receive_message(
             QueueUrl=self.get_queue_url(queue),
@@ -82,7 +77,6 @@ class PersistentDatabaseWriter:
         Writes data entry to database
 
         :param data_entry: data to enter
-        :return:
         """
         table_name = data_entry['formId']
         data = json.dumps(data_entry['data'])
@@ -96,7 +90,6 @@ class PersistentDatabaseWriter:
         self.logger.debug(create_table_statement)
 
         ret_create = db.execute(create_table_statement)
-        logging.info(ret_create)
 
         insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (\'{1}\', \'{2}\'::jsonb);'.format(
             table_name,
@@ -114,7 +107,7 @@ class PersistentDatabaseWriter:
 
         :param queue: SQS queue name
         :param data_entry: Message payload from SQS queue
-        :return:
+        :return: returns the response
         """
         response = self.sqs_client.delete_message(
             QueueUrl=self.get_queue_url(queue),
@@ -131,10 +124,10 @@ class PersistentDatabaseWriter:
         """
         self.logger.info("Notifying topic {0} with message: {1}".format(str(topic),json.dumps(message)))
 
-        #self.sns_client.publish(
-        #    TopicArn=topic,
-        #    Message=json.dumps(message)
-        #)
+        self.sns_client.publish(
+            TopicArn=topic,
+            Message=json.dumps(message)
+        )
 
     def store_data_entry(self, message, subscription_arn):
         """
@@ -142,7 +135,7 @@ class PersistentDatabaseWriter:
 
         :param message: message received by SNS
         :param subscription_arn: subscription ARN of the Lambda SNS subscription
-        :return: Binary value whether the Lambda function should be launched again
+        :return: binary value whether the Lambda function should be launched again
         """
 
         nest_outgoing_queue = os.environ['PERSISTENT_DATABASE_WRITER_QUEUE'] # self.get_outgoing_queue_name(message['queue'], subscription_arn)
@@ -166,9 +159,6 @@ def lambda_handler(event, context):
     :param context:
     :return: returns information about where the data was forwarded to
     """
-
-    print("GETting google.com")
-    print(str(requests.get("http://www.google.com")))
 
     writer = PersistentDatabaseWriter()
     message = json.loads(event['Records'][0]['Sns']['Message'])
