@@ -4,7 +4,6 @@ import json
 import uuid
 import logging
 import postgresql
-import requests
 
 
 class PersistentDatabaseWriter:
@@ -81,15 +80,14 @@ class PersistentDatabaseWriter:
         table_name = data_entry['formId']
         data = json.dumps(data_entry['data'])
 
-        db = postgresql.open(os.environ['DATABASE_URL'])
-
         create_table_statement = \
             'CREATE TABLE IF NOT EXISTS {0} (ID serial primary key, UUID text NOT NULL, DATA jsonb NOT NULL)'.format(
                 table_name
             )
         self.logger.debug(create_table_statement)
 
-        ret_create = db.execute(create_table_statement)
+        prep_create = self.db.prepare(create_table_statement)
+        prep_create()
 
         insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (\'{1}\', \'{2}\'::jsonb);'.format(
             table_name,
@@ -98,8 +96,8 @@ class PersistentDatabaseWriter:
         )
         self.logger.debug(insert_statement)
 
-        ret_insert = db.execute(insert_statement)
-        self.logger.debug(ret_insert)
+        prep_insert = self.db.prepare(insert_statement)
+        prep_insert()
 
     def acknowledge_messages(self, queue, data_entry):
         """
@@ -129,7 +127,7 @@ class PersistentDatabaseWriter:
             Message=json.dumps(message)
         )
 
-    def store_data_entry(self, message, subscription_arn):
+    def store_data_entries(self, message, subscription_arn):
         """
         Main function to call functions
 
@@ -141,6 +139,8 @@ class PersistentDatabaseWriter:
         nest_outgoing_queue = os.environ['PERSISTENT_DATABASE_WRITER_QUEUE'] # self.get_outgoing_queue_name(message['queue'], subscription_arn)
         self.logger.info("Fetching data from queue {0}".format(nest_outgoing_queue))
         data_entries = self.fetch_data_from_queue(nest_outgoing_queue)
+        if len(data_entries) > 0:
+            self.db = postgresql.open(os.environ['DATABASE_URL'])
         if len(data_entries) == self.max_number_of_messages:
             self.call_again = True
         for data_entry in data_entries:
@@ -164,9 +164,9 @@ def lambda_handler(event, context):
     message = json.loads(event['Records'][0]['Sns']['Message'])
     subscription_arn = event['Records'][0]['EventSubscriptionArn']
     topic = event['Records'][0]['Sns']['TopicArn']
-    call_again = writer.store_data_entry(message, subscription_arn)
+    call_again = writer.store_data_entries(message, subscription_arn)
 
-    if call_again:
-        writer.notify_outgoing_topic(topic=topic, message=message)
+#    if call_again:
+#        writer.notify_outgoing_topic(topic=topic, message=message)
 
     return 'Lambda run for ' + os.environ['ORG']
