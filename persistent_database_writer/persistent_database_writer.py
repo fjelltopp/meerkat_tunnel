@@ -77,27 +77,13 @@ class PersistentDatabaseWriter:
 
         :param data_entry: data to enter
         """
-        table_name = data_entry['formId']
         data = json.dumps(data_entry['data'])
 
-        create_table_statement = \
-            'CREATE TABLE IF NOT EXISTS {0} (ID serial primary key, UUID text NOT NULL, DATA jsonb NOT NULL)'.format(
-                table_name
-            )
-        self.logger.debug(create_table_statement)
-
-        prep_create = self.db.prepare(create_table_statement)
-        prep_create()
-
-        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (\'{1}\', \'{2}\'::jsonb);'.format(
-            table_name,
-            uuid.uuid4(),
-            data
-        )
+        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES ($1, $2);'.format(data_entry['formId'])
         self.logger.debug(insert_statement)
 
         prep_insert = self.db.prepare(insert_statement)
-        prep_insert()
+        prep_insert(str(uuid.uuid4()), data)
 
     def acknowledge_messages(self, queue, data_entry):
         """
