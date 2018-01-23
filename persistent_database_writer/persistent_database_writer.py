@@ -12,7 +12,7 @@ class PersistentDatabaseWriter:
         self.sns_client = boto3.client('sns', region_name=region_name)
         self.sqs_client = boto3.client('sqs', region_name=region_name)
 
-        self.max_number_of_messages = 10
+        self.max_number_of_messages = os.environ.get('PERSISTENT_DATABASE_WRITER_QUEUE', 10)
         self.call_again = False
 
         self.logger = logging.getLogger()
@@ -35,7 +35,7 @@ class PersistentDatabaseWriter:
 
         :param incoming_queue: SQS incoming queue name
         :param subscription_arn: Subscription ARN
-        :return: returns 1 to 10 messages from SQS
+        :return: returns SQS queue name
         """
 
         return os.environ['PERSISTENT_DATABASE_WRITER_QUEUE']
@@ -63,18 +63,18 @@ class PersistentDatabaseWriter:
 
         response = (self.sqs_client.receive_message(
             QueueUrl=self.get_queue_url(queue),
-            MaxNumberOfMessages=self.max_number_of_messages,
+            MaxNumberOfMessages=min(self.max_number_of_messages, 10),
             WaitTimeSeconds=1
         )
         ).get('Messages', [])
 
         return response
 
-
-    def write_to_db(self, data_entry):
+    def write_to_db(self, db, data_entry):
         """
         Writes data entry to database
 
+        :param db: database object
         :param data_entry: data to enter
         """
         data = json.dumps(data_entry['data'])
@@ -82,7 +82,7 @@ class PersistentDatabaseWriter:
         insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES ($1, $2);'.format(data_entry['formId'])
         self.logger.debug(insert_statement)
 
-        prep_insert = self.db.prepare(insert_statement)
+        prep_insert = db.prepare(insert_statement)
         prep_insert(str(uuid.uuid4()), data)
 
     def acknowledge_messages(self, queue, data_entry):
@@ -122,15 +122,29 @@ class PersistentDatabaseWriter:
         :return: binary value whether the Lambda function should be launched again
         """
 
-        nest_outgoing_queue = os.environ['PERSISTENT_DATABASE_WRITER_QUEUE'] # self.get_outgoing_queue_name(message['queue'], subscription_arn)
+        nest_outgoing_queue = os.environ['PERSISTENT_DATABASE_WRITER_QUEUE']
         self.logger.info("Fetching data from queue {0}".format(nest_outgoing_queue))
+
         data_entries = self.fetch_data_from_queue(nest_outgoing_queue)
+
         if len(data_entries) > 0:
-            self.db = postgresql.open(os.environ['DATABASE_URL'])
+            db = postgresql.open(os.environ['DATABASE_URL'])
+        else:
+            return False
+
+        while len(data_entries) < self.max_number_of_messages:
+            new_entries = self.fetch_data_from_queue(nest_outgoing_queue)
+
+            if len(new_entries) == 0:
+                break
+            else:
+                data_entries = data_entries + new_entries
+
         if len(data_entries) == self.max_number_of_messages:
             self.call_again = True
+
         for data_entry in data_entries:
-            self.write_to_db(json.loads(data_entry['Body']))
+            self.write_to_db(db, json.loads(data_entry['Body']))
             self.acknowledge_messages(nest_outgoing_queue, data_entry)
 
         self.logger.info("Handled {0} data entries".format(len(data_entries)))
