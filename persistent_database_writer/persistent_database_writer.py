@@ -12,7 +12,7 @@ class PersistentDatabaseWriter:
         self.sns_client = boto3.client('sns', region_name=region_name)
         self.sqs_client = boto3.client('sqs', region_name=region_name)
 
-        self.max_number_of_messages = os.environ.get('PERSISTENT_DATABASE_WRITER_QUEUE', 10)
+        self.max_number_of_messages = int(os.environ.get('MAX_NUMBER_OF_MESSAGES', 10))
         self.call_again = False
 
         self.logger = logging.getLogger()
@@ -79,11 +79,11 @@ class PersistentDatabaseWriter:
         """
         data = json.dumps(data_entry['data'])
 
-        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES ($1, $2);'.format(data_entry['formId'])
+        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES ($1, $2) ON CONFLICT UPDATE;'.format(data_entry['formId'])
         self.logger.debug(insert_statement)
 
         prep_insert = db.prepare(insert_statement)
-        prep_insert(str(uuid.uuid4()), data)
+        prep_insert(data.get('meta/instanceID', str(uuid.uuid4())), data)
 
     def acknowledge_messages(self, queue, data_entry):
         """
