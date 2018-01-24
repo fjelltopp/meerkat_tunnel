@@ -77,13 +77,15 @@ class PersistentDatabaseWriter:
         :param db: database object
         :param data_entry: data to enter
         """
-        data = json.dumps(data_entry['data'])
+        data_dict = data_entry.get('data', {})
+        data = json.dumps(data_dict)
 
-        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES ($1, $2) ON CONFLICT UPDATE;'.format(data_entry['formId'])
+        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES ($1, $2) ON CONFLICT (UUID) DO UPDATE SET DATA=$3 WHERE {0}.UUID=$4;'.format(data_entry['formId'])
         self.logger.debug(insert_statement)
 
+        uuid_new = data_dict.get('meta/instanceID', str(uuid.uuid4()))
         prep_insert = db.prepare(insert_statement)
-        prep_insert(data.get('meta/instanceID', str(uuid.uuid4())), data)
+        prep_insert(uuid_new, data, data, uuid_new)
 
     def acknowledge_messages(self, queue, data_entry):
         """
