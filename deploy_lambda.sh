@@ -7,7 +7,7 @@ PYTHON_INTERPRETER="$3"
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
 # Initialize our own variables:
-PYTHON_INTERPRETER="/usr/bin/python3"
+PYTHON_INTERPRETER="/home/jyri/miniconda3/bin/python"
 
 while getopts "h?p:" opt; do
     case "$opt" in
