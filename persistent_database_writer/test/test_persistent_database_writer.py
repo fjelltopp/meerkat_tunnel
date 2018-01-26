@@ -26,13 +26,6 @@ class PersistentDatabaseWriter(unittest.TestCase):
             'dead-letter-queue': 'nest-test-dead-letter-queue'
         }
 
-        # self.writer.session.add = MagicMock(return_value={})
-        # self.writer.session.commit = MagicMock(return_value={})
-
-        self.writer.sts_client.get_caller_identity = MagicMock(return_value={
-            'Account': 'test-account'
-        })
-
         self.writer.sqs_client.get_queue_url = MagicMock(return_value={
             'QueueUrl': 'aws:nest-test-queue-url'
         })
@@ -67,7 +60,7 @@ class PersistentDatabaseWriter(unittest.TestCase):
         self.writer.sqs_client.delete_message = MagicMock(return_value=None)
 
         # Call data storage function
-        self.writer.store_data_entry(self.event)
+        self.writer.store_data_entries(self.event)
 
     def test_receiving_messages(self):
         self.assertTrue(self.writer.sqs_client.receive_message.called)
