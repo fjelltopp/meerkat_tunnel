@@ -3,7 +3,7 @@ import os
 import json
 import uuid
 import logging
-import postgresql
+import psycopg2
 
 
 class PersistentDatabaseWriter:
@@ -70,7 +70,7 @@ class PersistentDatabaseWriter:
 
         return response
 
-    def write_to_db(self, db, data_entry):
+    def write_to_db(self, db_cur, data_entry):
         """
         Writes data entry to database
 
@@ -84,7 +84,7 @@ class PersistentDatabaseWriter:
         self.logger.debug(insert_statement)
 
         uuid_new = data_dict.get('meta/instanceID', str(uuid.uuid4()))
-        prep_insert = db.prepare(insert_statement)
+        prep_insert = db_cur.prepare(insert_statement)
         prep_insert(uuid_new, data, data, uuid_new)
 
     def acknowledge_messages(self, queue, data_entry):
@@ -130,7 +130,12 @@ class PersistentDatabaseWriter:
         data_entries = self.fetch_data_from_queue(nest_outgoing_queue)
 
         if len(data_entries) > 0:
-            db = postgresql.open(os.environ['DATABASE_URL'])
+            db_conn = psycopg2.connect(dbname=os.environ['DB_NAME'],
+                                       user=os.environ['DB_USER'],
+                                       password=os.environ['DB_PW'],
+                                       host=os.environ['DB_HOST'],
+                                       port=os.environ.get('DB_PORT', '5432'))
+            db_cur = db_conn.cursor()
         else:
             return False
 
@@ -146,10 +151,18 @@ class PersistentDatabaseWriter:
             self.call_again = True
 
         for data_entry in data_entries:
-            self.write_to_db(db, json.loads(data_entry['Body']))
+            self.write_to_db(db_cur, json.loads(data_entry['Body']))
             self.acknowledge_messages(nest_outgoing_queue, data_entry)
 
         self.logger.info("Handled {0} data entries".format(len(data_entries)))
+
+        # Close db cursor
+        if db_cur:
+            db_cur.close()
+
+        # Close db connection
+        if db_conn:
+            db_conn.close()
 
         return self.call_again
 
