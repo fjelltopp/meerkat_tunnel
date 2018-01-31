@@ -7,7 +7,7 @@ PYTHON_INTERPRETER="$3"
 OPTIND=1         # Reset in case getopts has been used previously in the shell.
 
 # Initialize our own variables:
-PYTHON_INTERPRETER="/home/jyri/miniconda3/bin/python"
+PYTHON_INTERPRETER="/usr/bin/python3"
 
 while getopts "h?p:" opt; do
     case "$opt" in
@@ -32,4 +32,10 @@ virtualenv -p $PYTHON_INTERPRETER ${FUNCTION}_env
 source ${FUNCTION}_env/bin/activate
 pip install -r ${FUNCTION}/requirements.txt
 
-python deploy_lambda.py $FUNCTION -c $COUNTRY
+echo "Requirements installed, do you want to deploy the Lambda function $FUNCTION to $COUNTRY after building the deployment package?"
+select yn in "Yes" "No"; do
+    case $yn in
+        Yes ) python deploy_lambda.py $FUNCTION -c $COUNTRY; break;;
+        No ) python deploy_lambda.py $FUNCTION -c $COUNTRY -n; break;;
+    esac
+done
