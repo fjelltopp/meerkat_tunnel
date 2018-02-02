@@ -80,11 +80,11 @@ class PersistentDatabaseWriter:
         data_dict = data_entry.get('data', {})
         data = json.dumps(data_dict)
 
-        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (%s, %s) ON CONFLICT (UUID) DO UPDATE SET DATA=$3 WHERE {0}.UUID=%s;'.format(data_entry['formId'])
+        insert_statement = 'INSERT INTO {0} (UUID, DATA) VALUES (%s, %s) ON CONFLICT (UUID) DO UPDATE SET DATA=%s WHERE {0}.UUID=%s;'.format(data_entry['formId'])
         self.logger.debug(insert_statement)
 
         uuid_new = data_dict.get('meta/instanceID', str(uuid.uuid4()))
-        db_cur.execute(insert_statement, uuid_new, data, data, uuid_new)
+        db_cur.execute(insert_statement, (uuid_new, data, data, uuid_new))
 
     def acknowledge_messages(self, queue, data_entry):
         """
