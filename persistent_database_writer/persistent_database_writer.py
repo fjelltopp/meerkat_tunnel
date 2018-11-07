@@ -151,6 +151,7 @@ class PersistentDatabaseWriter:
 
         for data_entry in data_entries:
             self.write_to_db(db_cur, json.loads(data_entry['Body']))
+            db_conn.commit()
             self.acknowledge_messages(nest_outgoing_queue, data_entry)
 
         self.logger.info("Handled {0} data entries".format(len(data_entries)))
