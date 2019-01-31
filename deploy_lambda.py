@@ -2,7 +2,6 @@ import boto3
 import os
 import argparse
 import sys
-from subprocess import call
 
 
 def get_precompiled_psycopg2(cwd, lambda_function):
@@ -17,11 +16,27 @@ def get_precompiled_psycopg2(cwd, lambda_function):
 
 
 def upload_deployment_package(lambda_function, pkg, country):
-    region_name = 'eu-west-1'
-    s3_client = boto3.client('s3', region_name=region_name)
-    lambda_client = boto3.client('lambda', region_name=region_name)
+    ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY", None)
+    SECRET_KEY = os.environ.get("AWS_SECRET_KEY", None)
 
-    s3_bucket = 'meerkat-tunnel'
+    region_name = 'eu-west-1'
+
+    if ACCESS_KEY and SECRET_KEY:
+        print("Reading AWS access keys from env")
+        s3_client = boto3.client('s3',
+                                 aws_access_key_id=ACCESS_KEY,
+                                 aws_secret_access_key=SECRET_KEY,
+                                 region_name=region_name)
+        lambda_client = boto3.client('lambda',
+                                     aws_access_key_id=ACCESS_KEY,
+                                     aws_secret_access_key=SECRET_KEY,
+                                     region_name=region_name)
+    else:
+        print("Reading AWS access keys from default config")
+        s3_client = boto3.client('s3', region_name=region_name)
+        lambda_client = boto3.client('lambda', region_name=region_name)
+
+    s3_bucket = 'meerkat-tunnel-' + country
     s3_key = '{0}.zip'.format(lambda_function)
     function_name = '{0}_{1}'.format(country, lambda_function)
 
@@ -29,7 +44,7 @@ def upload_deployment_package(lambda_function, pkg, country):
 
     lambda_client.update_function_code(
         FunctionName=function_name,
-        S3Bucket='meerkat-tunnel',
+        S3Bucket=s3_bucket,
         S3Key=s3_key,
         Publish=True
     )
