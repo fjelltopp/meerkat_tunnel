@@ -1,4 +1,5 @@
 import boto3
+import botocore
 import os
 import argparse
 import sys
@@ -18,33 +19,47 @@ def get_precompiled_psycopg2(cwd, lambda_function):
 def upload_deployment_package(lambda_function, pkg, country):
     ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY", None)
     SECRET_KEY = os.environ.get("AWS_SECRET_KEY", None)
-
-    region_name = 'eu-west-1'
+    REGION_NAME = os.environ.get("AWS_REGION_NAME", 'eu-west-1')
 
     if ACCESS_KEY and SECRET_KEY:
         print("Reading AWS access keys from env")
-        s3_client = boto3.client('s3',
-                                 aws_access_key_id=ACCESS_KEY,
-                                 aws_secret_access_key=SECRET_KEY,
-                                 region_name=region_name)
-        lambda_client = boto3.client('lambda',
-                                     aws_access_key_id=ACCESS_KEY,
-                                     aws_secret_access_key=SECRET_KEY,
-                                     region_name=region_name)
+        region_name = REGION_NAME
+        kwargs = {
+            'aws_access_key_id': ACCESS_KEY,
+            'aws_secret_access_key': SECRET_KEY,
+            'region_name': region_name
+        }
     else:
         print("Reading AWS access keys from default config")
-        s3_client = boto3.client('s3', region_name=region_name)
-        lambda_client = boto3.client('lambda', region_name=region_name)
+        session = boto3.session.Session()
+        region_name = session.region_name
+        kwargs = {
+            'region_name': region_name
+        }
+    s3_client = boto3.client('s3', **kwargs)
+    s3 = boto3.resource('s3')
+    lambda_client = boto3.client('lambda', **kwargs)
 
-    s3_bucket = 'meerkat-tunnel-' + country
+    bucket_name = f'meerkat-tunnel-{country}'
+    try:
+        s3.meta.client.head_bucket(Bucket=bucket_name)
+    except botocore.exceptions.ClientError as e:
+        error_code = e.response['Error']['Code']
+        if error_code == '404':
+            s3_client.create_bucket(
+                Bucket=bucket_name,
+                CreateBucketConfiguration={
+                    'LocationConstraint': region_name
+                }
+            )
     s3_key = '{0}.zip'.format(lambda_function)
     function_name = '{0}_{1}'.format(country, lambda_function)
 
-    s3_client.upload_file(pkg, s3_bucket, s3_key)
+    s3_client.upload_file(pkg, bucket_name, s3_key)
 
     lambda_client.update_function_code(
         FunctionName=function_name,
-        S3Bucket=s3_bucket,
+        S3Bucket=bucket_name,
         S3Key=s3_key,
         Publish=True
     )
