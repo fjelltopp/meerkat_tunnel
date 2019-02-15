@@ -5,9 +5,9 @@ Lambda SMS Converter Test
 import unittest
 from unittest.mock import MagicMock, call
 import datetime
-from dateutil.tz import tzutc
+import boto3
 
-import sms_submission_converter.sms_submission_converter
+import sms_submission_converter
 
 
 class SmsSubmissionConverterTest(unittest.TestCase):
@@ -21,4 +21,4 @@ class SmsSubmissionConverterTest(unittest.TestCase):
             'queue': 'nest-test-queue',
             'dead-letter-queue': 'nest-test-dead-letter-queue'
         }
-        self.converter = sms_submission_converter.sms_submission_converter.NestQueueConsumer())
+        self.converter = sms_submission_converter.sms_submission_converter.SmsSubmissionConverter()

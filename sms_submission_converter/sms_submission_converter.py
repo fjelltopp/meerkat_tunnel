@@ -13,8 +13,6 @@ class SmsSubmissionConverter:
     def __init__(self):
         region_name = 'eu-west-1'
 
-        self.max_number_of_messages = int(os.environ.get('MAX_NUMBER_OF_MESSAGES', 10))
-
 
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
