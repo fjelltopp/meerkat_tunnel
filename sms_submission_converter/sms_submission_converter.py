@@ -13,9 +13,10 @@ class SmsSubmissionConverter:
     def __init__(self):
         region_name = 'eu-west-1'
 
-
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
+
+        self.submission = 
 
 def lambda_handler(event, context):
     #logger.info('got event{}'.format(event))
