@@ -3,10 +3,21 @@ import json
 import logging
 import requests
 import os
+import xml.etree.ElementTree as et
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
+class SmsSubmissionConverter:
+    def __init__(self):
+        region_name = 'eu-west-1'
+
+        self.max_number_of_messages = int(os.environ.get('MAX_NUMBER_OF_MESSAGES', 10))
+
+
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
 
 def lambda_handler(event, context):
     #logger.info('got event{}'.format(event))
@@ -28,6 +39,8 @@ def lambda_handler(event, context):
 
     form_xml = requests.get(os.environ.get("aggregate_url") + "/formXml",
                                params={"formId": form_id})
+
+
 
     logger.info('form xml {}'.format(str(form_xml)))
     return {
