@@ -16,32 +16,48 @@ class SmsSubmissionConverter:
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
 
-        self.submission = 
+    def prepare_payload(self, payload):
+        t = json.loads(payload['body'].replace("'", '"'))
+        submission = t['text'].split(";")
+
+        if submission[-1] == '':
+            submission.pop(-1)
+
+        form_id = submission.pop(0)
+
+        form_columns = submission[0::2]
+        form_values = submission[1::2]
+
+        form_content = {}
+
+        for i in range(len(form_columns)):
+            form_content[form_columns[i]] = form_values[i]
+
+        return {'form_id': form_id,
+                'data': form_content}
+
+    def get_form_definition(self, aggregate_url, form_id):
+        form_url = "{}/formXml".format(aggregate_url)
+
+        form_response = requests.get(form_url, params={'formId': form_id})
+
+        form_xml = form_response.text
+
+        form_definition = et.parse(form_xml)
+
+        return form_definition
 
 def lambda_handler(event, context):
     #logger.info('got event{}'.format(event))
+    translator = SmsSubmissionConverter()
 
-    payload = event['body']['text']
+    payload = translator.prepare_payload(event)
 
-    submission = payload.split(";")
+    aggregate_url = os.environ.get('AGGREGATE_URL')
 
-    form_id = submission.pop(0)
+    form_definition = translator.get_form_definition(aggregate_url, payload['form_id'])
 
-    form_columns = submission[0::2]
-    form_values = submission[1::2]
-
-    data = {}
-    for i in range(0, len(form_columns)):
-        data[form_columns[i]] = form_values[i]
-
-    logger.info('data {}'.format(str(data)))
-
-    form_xml = requests.get(os.environ.get("aggregate_url") + "/formXml",
-                               params={"formId": form_id})
-
-
-
-    logger.info('form xml {}'.format(str(form_xml)))
+    logger.info('form xml {}'.format(str(form_definition)))
     return {
         'statusCode': 200,
         'body': json.dumps('Hello from Lambda!')
