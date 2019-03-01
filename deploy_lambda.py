@@ -5,17 +5,6 @@ import argparse
 import sys
 
 
-def get_precompiled_psycopg2(cwd, lambda_function):
-    print("Using precompiled version of psycopg2 Python dependency")
-
-    os.system('cp -r {0}/awslambda-psycopg2-master/psycopg2-3.6 {0}/{1}/psycopg2'.format(cwd, lambda_function))
-
-    os.chdir('{0}/{1}'.format(cwd, lambda_function))
-    os.system('zip -q -r {0}/lambda_packages/{1}.zip psycopg2'.format(cwd, lambda_function))
-    os.system('rm -r psycopg2'.format(cwd, lambda_function))
-    os.chdir(cwd)
-
-
 def upload_deployment_package(lambda_function, pkg, country):
     ACCESS_KEY = os.environ.get("AWS_ACCESS_KEY", None)
     SECRET_KEY = os.environ.get("AWS_SECRET_KEY", None)
@@ -98,8 +87,6 @@ def make_deployment_package(lambda_function, python_version):
 
     # go back to original working directory
     os.chdir(cwd)
-
-    get_precompiled_psycopg2(cwd, lambda_function)
 
     print('Deployment package {0}.zip created'.format(lambda_function))
     return '{0}/lambda_packages/{1}.zip'.format(cwd, lambda_function)
