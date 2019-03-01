@@ -43,7 +43,7 @@ class SmsSubmissionConverter:
 
         form_xml = form_response.text
 
-        form_definition = et.parse(form_xml)
+        form_definition = et.fromstring(form_xml)
 
         return form_definition
 
