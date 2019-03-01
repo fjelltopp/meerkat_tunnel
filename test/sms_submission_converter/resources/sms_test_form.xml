@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<h:html xmlns="http://www.w3.org/2002/xforms" xmlns:ev="http://www.w3.org/2001/xml-events" xmlns:h="http://www.w3.org/1999/xhtml" xmlns:jr="http://openrosa.org/javarosa" xmlns:odk="http://www.opendatakit.org/xforms" xmlns:orx="http://openrosa.org/xforms" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <h:head>
+    <h:title>Simple test form</h:title>
+    <model>
+      <instance>
+        <sms_test_form id="sms_test_form" odk:delimiter=";" odk:prefix="d_test" version="1">
+          <start/>
+          <end/>
+          <today/>
+          <deviceid odk:tag="did"/>
+          <subscriberid/>
+          <simid/>
+          <phonenumber/>
+          <note_title/>
+          <yesno odk:tag="yn"/>
+          <howmany odk:tag="hm"/>
+          <meta>
+            <instanceID/>
+          </meta>
+        </sms_test_form>
+      </instance>
+      <bind jr:preload="timestamp" jr:preloadParams="start" nodeset="/sms_test_form/start" type="dateTime"/>
+      <bind jr:preload="timestamp" jr:preloadParams="end" nodeset="/sms_test_form/end" type="dateTime"/>
+      <bind jr:preload="date" jr:preloadParams="today" nodeset="/sms_test_form/today" type="date"/>
+      <bind jr:preload="property" jr:preloadParams="deviceid" nodeset="/sms_test_form/deviceid" type="string"/>
+      <bind jr:preload="property" jr:preloadParams="subscriberid" nodeset="/sms_test_form/subscriberid" type="string"/>
+      <bind jr:preload="property" jr:preloadParams="simserial" nodeset="/sms_test_form/simid" type="string"/>
+      <bind jr:preload="property" jr:preloadParams="phonenumber" nodeset="/sms_test_form/phonenumber" type="string"/>
+      <bind nodeset="/sms_test_form/note_title" readonly="true()" type="string"/>
+      <bind nodeset="/sms_test_form/yesno" type="select1"/>
+      <bind nodeset="/sms_test_form/howmany" type="int"/>
+      <bind calculate="concat('uuid:', uuid())" nodeset="/sms_test_form/meta/instanceID" readonly="true()" type="string"/>
+    </model>
+  </h:head>
+  <h:body>
+    <input ref="/sms_test_form/note_title">
+      <label>## Simple test form</label>
+    </input>
+    <select1 ref="/sms_test_form/yesno">
+      <label>Yes or no?</label>
+      <item>
+        <label>No</label>
+        <value>no</value>
+      </item>
+      <item>
+        <label>Yes</label>
+        <value>yes</value>
+      </item>
+    </select1>
+    <input ref="/sms_test_form/howmany">
+      <label>How many?</label>
+    </input>
+  </h:body>
+</h:html>

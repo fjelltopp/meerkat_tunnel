@@ -1,5 +1,7 @@
 # Lambda packages
 lambda_packages/
+venvs/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
