@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 FUNCTION="$1"
 COUNTRY="$2"
 PYTHON_INTERPRETER="$3"
@@ -27,10 +28,11 @@ echo "country $COUNTRY"
 echo "python interpreter $PYTHON_INTERPRETER"
 #git checkout master
 #git pull origin master
-pip install virtualenv
-virtualenv -p $PYTHON_INTERPRETER ${FUNCTION}_env
-source ${FUNCTION}_env/bin/activate
-pip install -r ${FUNCTION}/requirements.txt
+mkdir -p venvs
+pip3 install virtualenv
+$PYTHON_INTERPRETER -m venv venvs/${FUNCTION}_env
+source venvs/${FUNCTION}_env/bin/activate
+pip install -r requirements/${FUNCTION}_requirements.txt
 
 echo "Requirements installed, do you want to deploy the Lambda function $FUNCTION to $COUNTRY after building the deployment package?"
 select yn in "Yes" "No"; do
