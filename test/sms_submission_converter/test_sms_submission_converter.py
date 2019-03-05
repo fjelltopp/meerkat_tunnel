@@ -3,10 +3,6 @@ Lambda SMS Converter Test
 """
 
 import unittest
-from unittest import mock
-from unittest.mock import MagicMock, call
-import datetime
-import boto3
 
 from lambdas.sms_submission_converter import SmsSubmissionConverter
 
@@ -162,3 +158,8 @@ class SmsSubmissionConverterTest(unittest.TestCase):
         
     def test_fetching_form_definition(self):
         form_definition = self.converter.get_form_definition(self.aggregate_url, self.form_id)
+
+    def test_converting_to_xml_submission(self):
+      prepared_payload = self.converter.prepare_payload(self.event)
+      form_definition = self.converter.get_form_definition(self.aggregate_url, self.form_id)
+      xml_payload = self.converter.payload_json_to_xml(form_definition, prepared_payload)
