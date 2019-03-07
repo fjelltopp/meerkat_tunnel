@@ -70,20 +70,23 @@ def make_deployment_package(lambda_function, python_version):
         packages64 = os.listdir(site_packages_lib64_format)
     else:
         packages64 = []
-    os.system('mkdir -p {0}/lambda_packages'.format(cwd))
     os.system('rm -f {0}/lambda_packages/{1}.zip'.format(cwd, lambda_function))
+    os.system('rm -rf {0}/lambda_packages/{1}'.format(cwd, lambda_function))
+    os.system('mkdir -p {0}/lambda_packages/{1}'.format(cwd, lambda_function))
 
-    os.system('zip -q {0}/lambda_packages/{1}.zip lambdas/{1}.py'.format(cwd, lambda_function))
+    os.system('cp lambdas/{1}.py {0}/lambda_packages/{1}/ '.format(cwd, lambda_function))
 
     for pkg in packages:
         pkg_path = os.path.join(site_packages_lib_format, pkg)
-        os.system('zip -q -r {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg_path))
+        os.system('cp -r {2} {0}/lambda_packages/{1}/'.format(cwd, lambda_function, pkg_path))
 
     for pkg64 in packages64:
         pkg64_path = os.path.join(site_packages_lib_format, pkg64)
-        os.system('zip -q -r {0}/lambda_packages/{1}.zip {2}'.format(cwd, lambda_function, pkg64_path))
-
+        os.system('cp -r {2} {0}/lambda_packages/{1}/'.format(cwd, lambda_function, pkg64_path))
+    os.chdir('{0}/lambda_packages/{1}'.format(cwd, lambda_function))
+    os.system('zip -q {0}/lambda_packages/{1}.zip ./*'.format(cwd, lambda_function))
     print('Deployment package {0}.zip created'.format(lambda_function))
+    os.chdir(cwd)
     return '{0}/lambda_packages/{1}.zip'.format(cwd, lambda_function)
 
 
