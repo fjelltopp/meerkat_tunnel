@@ -84,7 +84,7 @@ def make_deployment_package(lambda_function, python_version):
         pkg64_path = os.path.join(site_packages_lib_format, pkg64)
         os.system('cp -r {2} {0}/lambda_packages/{1}/'.format(cwd, lambda_function, pkg64_path))
     os.chdir('{0}/lambda_packages/{1}'.format(cwd, lambda_function))
-    os.system('zip -q {0}/lambda_packages/{1}.zip ./*'.format(cwd, lambda_function))
+    os.system('zip -rq {0}/lambda_packages/{1}.zip ./*'.format(cwd, lambda_function))
     print('Deployment package {0}.zip created'.format(lambda_function))
     os.chdir(cwd)
     return '{0}/lambda_packages/{1}.zip'.format(cwd, lambda_function)
