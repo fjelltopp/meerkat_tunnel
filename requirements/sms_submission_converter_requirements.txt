@@ -1,0 +1,6 @@
+requests
+xmltodict
+boto3
+psycopg2
+SQLAlchemy
+
