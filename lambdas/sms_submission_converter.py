@@ -183,7 +183,7 @@ def lambda_handler(event, context):
         else:
             return {
                 'statusCode': 200,
-                'body': json.dumps('Hello from Lambda!')
+                'body': json.dumps({"message": "success"})
             }
     else:
         logger.info("Single sms submission.")
@@ -201,6 +201,6 @@ def lambda_handler(event, context):
     logger.info(f'Send submission to aggregate with code {r.status_code}')
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps({"message": "success"})
     }
 
