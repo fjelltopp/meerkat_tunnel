@@ -15,8 +15,9 @@ class PersistentDatabaseWriter:
         self.max_number_of_messages = int(os.environ.get('MAX_NUMBER_OF_MESSAGES', 10))
         self.call_again = False
 
+        log_level_ = str(os.environ.get('LOGGING_LEVEL', 'ERROR'))
         self.logger = logging.getLogger()
-        self.logger.setLevel(logging.INFO)
+        self.logger.setLevel(log_level_)
 
     def get_account_id(self):
         """
@@ -174,9 +175,6 @@ def lambda_handler(event, context):
     """
 
     writer = PersistentDatabaseWriter()
-    message = json.loads(event['Records'][0]['Sns']['Message'])
-    subscription_arn = event['Records'][0]['EventSubscriptionArn']
-    topic = event['Records'][0]['Sns']['TopicArn']
     call_again = writer.store_data_entries()
 
 #    if call_again:
