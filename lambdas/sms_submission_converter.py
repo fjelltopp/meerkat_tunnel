@@ -135,7 +135,11 @@ class SmsSubmissionConverter:
         return submission_dict
 
     def _short_to_long_field_names(self, form_definition, form_id):
-        form_fields = form_definition['h:html']['h:head']['model']['instance'][0][form_id]
+        form_instance = form_definition['h:html']['h:head']['model']['instance']
+        if isinstance(form_definition, list):
+            form_fields = form_instance[0][form_id]
+        else:
+            form_fields = form_instance[form_id]
         ids_map = dict()
         for key, field in form_fields.items():
             try:
@@ -204,3 +208,7 @@ def lambda_handler(event, context):
         'body': json.dumps({"message": "success"})
     }
 
+if __name__ == '__main__':
+    s = SmsSubmissionConverter()
+    fd = s.get_form_definition("https://odk.car.fjelltopp.org", "d_test")
+    print(fd)
