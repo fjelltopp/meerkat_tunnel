@@ -136,7 +136,7 @@ class SmsSubmissionConverter:
 
     def _short_to_long_field_names(self, form_definition, form_id):
         form_instance = form_definition['h:html']['h:head']['model']['instance']
-        if isinstance(form_definition, list):
+        if isinstance(form_instance, list):
             form_fields = form_instance[0][form_id]
         else:
             form_fields = form_instance[form_id]
